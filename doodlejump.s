@@ -7,10 +7,13 @@ doodlerColor: .word 0xff0000
 
 #t0 = base address
 #t3 = doodler position
+#t6 = user input
 #s1 = platform #1 position
 #s2 = platform #2 position
 #s3 = platform #3 position
-#t6 = user input
+#s4 = direction (1 = up, 0 = down)
+#s5 = jump height (10 rows max)
+
 .text 
 main:
 	lw $t0, baseAddress 	# load baseaddress
@@ -51,30 +54,50 @@ main:
 	sw $s3, 0($sp) 		# store platform #2 in stack
 	jal RENDER_PLATFORMS
 	
+	li $s4, 1		# set movement direction to up
+	li $s6, 0		# set jump height
 	j WAIT_FOR_START
 	
 
 WAIT_FOR_START:
-	lw $t6, 0xffff0000	# check for user input
-	beq $t6, 1, start_input	#If user input go to start_input
-	#TODO: sleep?
+	lw $t6, 0xffff0000		# check for user input
+	beq $t6, 1, start_input		#If user input go to start_input
 	j WAIT_FOR_START
 	start_input:
-		lw $t6, 0xffff0004 # Check input
-		
-		#TODO: make doodler jump before moving to PLAY_GAME
-		
+		lw $t6, 0xffff0004 	# Check input
 		beq $t6, 0x73, PLAY_GAME # if input is "s", start game
-		#TODO: sleep?
 		j WAIT_FOR_START
 		
 PLAY_GAME:
-	#jal CHECK_INPUT
-	li $v0, 1
-	li $a0, 69
-	syscall 
+	jal CHECK_INPUT
+	jal VERTICAL_MOVE
 	
-	j TERMINATE
+	lw $t0, baseAddress 
+	li $t2, 0
+	jal RENDER_SCREEN
+	
+	li $t2, 0		# set counter to 0	
+	addi $sp, $sp, -4 
+	sw $s1, 0($sp) 		# store platform #1 in stack
+	addi $sp, $sp, -4 
+	sw $s2, 0($sp) 		# store platform #2 in stack
+	addi $sp, $sp, -4 
+	sw $s3, 0($sp) 		# store platform #2 in stack
+	jal RENDER_PLATFORMS
+	
+		
+	lw $t0, baseAddress
+	jal RENDER_DOODLER
+	
+	li $s7, 3584 
+	add $s7, $s7, $t0
+	bgt $t3,  $s7, TERMINATE
+	
+	li $v0, 32
+	li $a0, 500
+	syscall
+	
+	j PLAY_GAME
 	
 	
 CHECK_INPUT:
@@ -83,7 +106,6 @@ CHECK_INPUT:
 	jr $ra
 	keyboard_input:
 		lw $t6, 0xffff0004 
-		#TODO: double check hex for "j" and "k"
 		beq $t6, 0x6A, move_left  # if input is "j" move left, Make sure that hex is right
 		beq $t6, 0x6B, move_right # if input is "k" move left,Make sure that hex is right
 		beq $t6, 0x73, main 	  #if input is "s" restart the game
@@ -97,6 +119,39 @@ CHECK_INPUT:
 		#move doodler one unit to the left
 		addi $t3, $t3, 4
 		jr $ra
+		
+VERTICAL_MOVE:
+	beq $s4, 1, move_up
+	move_down:
+		addi $t3, $t3, 128 	# move doodler down
+		jr $ra
+		
+	move_up:
+		#if doodler is below or on 17th line, move doodler up, o/w scroll background down
+		li $a0, 2176
+		bge  $t3, $a0, doodler_up
+		scroll_background:
+			addi $s1, $s1, 128
+			addi $s2, $s2, 128
+			addi $s3, $s3, 128
+			j increment_jump_counter
+		doodler_up:
+			addi $t3, $t3, -128
+			j increment_jump_counter
+		
+		#in a jump you can only move up 10 units
+		increment_jump_counter:
+			li $a0, 9
+			bge $s6, $a0, change_direction
+			addi $s6, $s6, 1 # else increment jump counter
+			jr $ra
+			change_direction:
+				li $s6, 0	# reset jump height
+				li $s4, 0	# set movement direction to down
+				jr $ra
+			
+		
+			
 	
 RENDER_SCREEN:
 	#loop through screen and color background blue
