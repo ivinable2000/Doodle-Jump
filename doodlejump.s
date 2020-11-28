@@ -70,7 +70,12 @@ WAIT_FOR_START:
 		
 PLAY_GAME:
 	jal CHECK_INPUT
+	
 	jal VERTICAL_MOVE
+	
+	jal CHECK_COLLISION
+	
+	#TODO: Create new platforms
 	
 	lw $t0, baseAddress 
 	li $t2, 0
@@ -89,10 +94,7 @@ PLAY_GAME:
 	lw $t0, baseAddress
 	jal RENDER_DOODLER
 	
-	li $s7, 3584 
-	add $s7, $s7, $t0
-	bgt $t3,  $s7, TERMINATE
-	
+	# Sleep for half a second
 	li $v0, 32
 	li $a0, 500
 	syscall
@@ -129,6 +131,7 @@ VERTICAL_MOVE:
 	move_up:
 		#if doodler is below or on 17th line, move doodler up, o/w scroll background down
 		li $a0, 2176
+		add $a0, $a0, $t0
 		bge  $t3, $a0, doodler_up
 		scroll_background:
 			addi $s1, $s1, 128
@@ -141,7 +144,7 @@ VERTICAL_MOVE:
 		
 		#in a jump you can only move up 10 units
 		increment_jump_counter:
-			li $a0, 9
+			li $a0, 12
 			bge $s6, $a0, change_direction
 			addi $s6, $s6, 1 # else increment jump counter
 			jr $ra
@@ -150,8 +153,86 @@ VERTICAL_MOVE:
 				li $s4, 0	# set movement direction to down
 				jr $ra
 			
+CHECK_COLLISION:
+	#If doodler reaches bottom (dies), end game
+	li $a0, 3584 
+	add $a0, $a0, $t0
+	bgt $t3,  $a0, TERMINATE
+	
+	addi $a0, $t3, 512	# Doodlers left foot
+	
+	bne $s4, $zero, RETURN 	# If doodler is moving up then do not look for collision
+	
+	addi $sp, $sp, -4 
+	sw $ra, 0($sp) 		# store return address in stack
+	jal FIRST_PLATFORM_COLLISION
+	
+	lw $ra, 0($sp)
+	addi $sp, $sp, 4
+	jr $ra
+	
+FIRST_PLATFORM_COLLISION:
+	addi $a1, $s1, 32
+	blt $a0, $a1, first_platform_left_side
+	
+	j check_second_platform
+
+	first_platform_left_side:
+		subi $a1, $a1, 44
+		bge  $a0, $a1, first_platform_collision
+		j check_second_platform
+		first_platform_collision:
+			subi $t3, $t3, 128
+			li $s4, 1	# set movement direction to up
+			jr $ra
+	check_second_platform:
+		addi $sp, $sp, -4 
+		sw $ra, 0($sp) 		# store return address in stack
+		jal SECOND_PLATFORM_COLLISION
 		
-			
+		lw $ra, 0($sp)
+		addi $sp, $sp, 4
+		
+		jr $ra
+		
+SECOND_PLATFORM_COLLISION:
+	addi $a1, $s2, 32
+	blt $a0, $a1, second_platform_left_side
+	
+	j check_third_platform
+
+	second_platform_left_side:
+		subi $a1, $a1, 44
+		bge  $a0, $a1, second_platform_collision
+		j check_third_platform
+		second_platform_collision:
+			subi $t3, $t3, 128
+			li $s4, 1	# set movement direction to up
+			jr $ra
+	check_third_platform:
+		addi $sp, $sp, -4 
+		sw $ra, 0($sp) 		# store return address in stack
+		jal THIRD_PLATFORM_COLLISION
+		
+		lw $ra, 0($sp)
+		addi $sp, $sp, 4
+		
+		jr $ra
+		
+THIRD_PLATFORM_COLLISION:
+	addi $a1, $s3, 32
+	blt $a0, $a1, third_platform_left_side
+	
+	jr $ra
+
+	third_platform_left_side:
+		subi $a1, $a1, 44
+		bge  $a0, $a1, third_platform_collision
+		jr $ra
+		third_platform_collision:
+			subi $t3, $t3, 128
+			li $s4, 1	# set movement direction to up
+			jr $ra
 	
 RENDER_SCREEN:
 	#loop through screen and color background blue
@@ -179,8 +260,8 @@ RENDER_DOODLER:
 	sw $t4, 388($t3)
 	sw $t4, 392($t3)
 	sw $t4, 396($t3)
-	sw $t4, 512($t3)
-	sw $t4, 524($t3)
+	sw $t4, 512($t3)	#left foot
+	sw $t4, 524($t3)	#right foot
 	j RETURN
 	
 RENDER_PLATFORMS:
