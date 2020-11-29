@@ -75,7 +75,7 @@ PLAY_GAME:
 	
 	jal CHECK_COLLISION
 	
-	#TODO: Create new platforms
+	jal CHECK_PLATFORM
 	
 	lw $t0, baseAddress 
 	li $t2, 0
@@ -96,7 +96,7 @@ PLAY_GAME:
 	
 	# Sleep for half a second
 	li $v0, 32
-	li $a0, 500
+	li $a0, 250
 	syscall
 	
 	j PLAY_GAME
@@ -233,6 +233,42 @@ THIRD_PLATFORM_COLLISION:
 			subi $t3, $t3, 128
 			li $s4, 1	# set movement direction to up
 			jr $ra
+			
+CHECK_PLATFORM:
+	li $a2, 4096
+	add $a2, $a2, $t0
+	addi $sp, $sp, -4 	# make space in stack for return address
+	sw $ra, 0($sp)
+	
+	bge $s1, $a2, new_s1_platform
+	bge $s2, $a2, new_s2_platform
+	bge $s3, $a2, new_s3_platform
+	
+	addi $sp, $sp, 4
+	jr $ra
+	
+	new_s1_platform:
+		jal RANDOM_POSITION
+		lw $s1, 0($sp) 		# pop platform #1 offset from stack
+		addi $sp, $sp, 4
+		lw $ra, 0($sp) 		# pop return address from stack
+		addi $sp, $sp, 4
+		jr $ra
+	new_s2_platform:
+		jal RANDOM_POSITION
+		lw $s2, 0($sp) 		# pop platform #2 offset from stack
+		addi $sp, $sp, 4
+		lw $ra, 0($sp) 		# pop return address from stack
+		addi $sp, $sp, 4
+		jr $ra
+	new_s3_platform:
+		jal RANDOM_POSITION
+		lw $s3, 0($sp) 		# pop platform #3 offset from stack
+		addi $sp, $sp, 4
+		lw $ra, 0($sp) 		# pop return address from stack
+		addi $sp, $sp, 4
+		jr $ra
+	
 	
 RENDER_SCREEN:
 	#loop through screen and color background blue
