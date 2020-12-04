@@ -8,11 +8,13 @@ doodlerColor: .word 0xff0000
 #t0 = base address
 #t3 = doodler position
 #t6 = user input
+#t7 = score
 #s1 = platform #1 position
 #s2 = platform #2 position
 #s3 = platform #3 position
 #s4 = direction (1 = up, 0 = down)
-#s5 = jump height (10 rows max)
+#s5 = spring position
+#s6 = jump height
 
 .text 
 main:
@@ -56,6 +58,7 @@ main:
 	
 	li $s4, 1		# set movement direction to up
 	li $s6, 0		# set jump height
+	li $t7, 0		# set score to 0
 	j WAIT_FOR_START
 	
 
@@ -93,10 +96,14 @@ PLAY_GAME:
 		
 	lw $t0, baseAddress
 	jal RENDER_DOODLER
+
+	jal DRAW_SCORE
+	# Calculate sleep
+	jal SLEEP_TIME
+	lw $a0, 0($sp) 		# pop sleep time from stack
+	addi $sp, $sp, 4
 	
-	# Sleep for half a second
-	li $v0, 32
-	li $a0, 250
+	li $v0, 32		# Make program sleep
 	syscall
 	
 	j PLAY_GAME
@@ -184,6 +191,8 @@ FIRST_PLATFORM_COLLISION:
 		first_platform_collision:
 			subi $t3, $t3, 128
 			li $s4, 1	# set movement direction to up
+			addi $t7, $t7, 1 # Increase score
+			
 			jr $ra
 	check_second_platform:
 		addi $sp, $sp, -4 
@@ -208,6 +217,7 @@ SECOND_PLATFORM_COLLISION:
 		second_platform_collision:
 			subi $t3, $t3, 128
 			li $s4, 1	# set movement direction to up
+			addi $t7, $t7, 1 # Increase score
 			jr $ra
 	check_third_platform:
 		addi $sp, $sp, -4 
@@ -232,6 +242,7 @@ THIRD_PLATFORM_COLLISION:
 		third_platform_collision:
 			subi $t3, $t3, 128
 			li $s4, 1	# set movement direction to up
+			addi $t7, $t7, 1 # Increase score
 			jr $ra
 			
 CHECK_PLATFORM:
@@ -268,7 +279,221 @@ CHECK_PLATFORM:
 		lw $ra, 0($sp) 		# pop return address from stack
 		addi $sp, $sp, 4
 		jr $ra
+		
+SLEEP_TIME:
+	li $a0, 10
+	li $a1, 400
 	
+	mult $t7, $a0
+	mflo $a0
+	
+	bgt $a1, $a0, decrement_sleep
+	
+	addi $sp, $sp, -4 
+	sw $zero, 0($sp) 		
+	jr $ra
+	
+	
+	decrement_sleep:
+		sub $a0, $a1, $a0
+		addi $sp, $sp, -4 
+		sw $a0, 0($sp) 
+		
+		jr $ra
+	
+	
+		
+DRAW_SCORE:
+	li $a2, 10
+	div $t7, $a2
+	
+	mflo $a3
+	
+	addi $sp, $sp, -4 	# make space in stack for return address
+	sw $ra, 0($sp)
+	
+	
+	addi $sp, $sp, -4 	# make space in stack for first digit
+	sw $a3, 0($sp)
+	
+	li $a2, 176
+	add $a2, $a2, $t0	# location of first digit
+
+	addi $sp, $sp, -4 	# make space in stack for first digit position
+	sw $a2, 0($sp)
+	
+	jal DRAW_NUMBER
+	
+	mfhi $a3
+	
+	addi $sp, $sp, -4 	# make space in stack for second digit
+	sw $a3, 0($sp)
+	
+	li $a2, 192
+	add $a2, $a2, $t0	# location of second digit
+
+	addi $sp, $sp, -4 	# make space in stack for second digit position
+	sw $a2, 0($sp)
+	
+	jal DRAW_NUMBER
+	
+	lw $ra, 0($sp) 		# pop return address from stack
+	addi $sp, $sp, 4
+	
+	jr $ra
+	
+	
+DRAW_NUMBER:
+	lw $a3, 0($sp) 		# pop digit position from stack
+	addi $sp, $sp, 4
+	
+	lw $v0, 0($sp) 		# pop digit from stack
+	addi $sp, $sp, 4
+	
+	li $a2, 9
+	
+	beq $v0, $a2, draw_nine
+	addi $a2, $a2, -1
+	beq $v0, $a2, draw_eight
+	addi $a2, $a2, -1
+	beq $v0, $a2, draw_seven
+	addi $a2, $a2, -1
+	beq $v0, $a2, draw_six
+	addi $a2, $a2, -1
+	beq $v0, $a2, draw_five
+	addi $a2, $a2, -1
+	beq $v0, $a2, draw_four
+	addi $a2, $a2, -1
+	beq $v0, $a2, draw_three
+	addi $a2, $a2, -1
+	beq $v0, $a2, draw_two
+	addi $a2, $a2, -1
+	beq $v0, $a2, draw_one
+	addi $a2, $a2, -1
+	beq $v0, $a2, draw_zero
+	jr $ra
+	
+	draw_nine:
+		sw $t4, 0($a3)
+		sw $t4, 4($a3)
+		sw $t4, 8($a3)
+		sw $t4, 128($a3)
+		sw $t4, 136($a3)
+		sw $t4, 256($a3)
+		sw $t4, 260($a3)
+		sw $t4, 264($a3)
+		sw $t4, 392($a3)
+		sw $t4, 520($a3)
+		jr $ra
+	draw_eight:
+		sw $t4, 0($a3)
+		sw $t4, 4($a3)
+		sw $t4, 8($a3)
+		sw $t4, 128($a3)
+		sw $t4, 136($a3)
+		sw $t4, 256($a3)
+		sw $t4, 260($a3)
+		sw $t4, 264($a3)
+		sw $t4, 384($a3)
+		sw $t4, 392($a3)
+		sw $t4, 512($a3)
+		sw $t4, 516($a3)
+		sw $t4, 520($a3)
+		jr $ra
+	draw_seven:
+		sw $t4, 0($a3)
+		sw $t4, 4($a3)
+		sw $t4, 8($a3)
+		sw $t4, 136($a3)
+		sw $t4, 264($a3)
+		sw $t4, 392($a3)
+		sw $t4, 520($a3)
+		jr $ra
+	draw_six:
+		sw $t4, 0($a3)
+		sw $t4, 4($a3)
+		sw $t4, 8($a3)
+		sw $t4, 128($a3)
+		sw $t4, 256($a3)
+		sw $t4, 260($a3)
+		sw $t4, 264($a3)
+		sw $t4, 384($a3)
+		sw $t4, 392($a3)
+		sw $t4, 512($a3)
+		sw $t4, 516($a3)
+		sw $t4, 520($a3)
+		jr $ra
+	draw_five:
+		sw $t4, 0($a3)
+		sw $t4, 4($a3)
+		sw $t4, 8($a3)
+		sw $t4, 128($a3)
+		sw $t4, 256($a3)
+		sw $t4, 260($a3)
+		sw $t4, 264($a3)
+		sw $t4, 392($a3)
+		sw $t4, 512($a3)
+		sw $t4, 516($a3)
+		sw $t4, 520($a3)
+		jr $ra
+	draw_four:
+		sw $t4, 0($a3)
+		sw $t4, 8($a3)
+		sw $t4, 128($a3)
+		sw $t4, 136($a3)
+		sw $t4, 256($a3)
+		sw $t4, 260($a3)
+		sw $t4, 264($a3)
+		sw $t4, 392($a3)
+		sw $t4, 520($a3)
+		jr $ra
+	draw_three:
+		sw $t4, 0($a3)
+		sw $t4, 4($a3)
+		sw $t4, 8($a3)
+		sw $t4, 136($a3)
+		sw $t4, 256($a3)
+		sw $t4, 260($a3)
+		sw $t4, 264($a3)
+		sw $t4, 392($a3)
+		sw $t4, 512($a3)
+		sw $t4, 516($a3)
+		sw $t4, 520($a3)
+		jr $ra
+	draw_two:
+		sw $t4, 0($a3)
+		sw $t4, 4($a3)
+		sw $t4, 8($a3)
+		sw $t4, 136($a3)
+		sw $t4, 256($a3)
+		sw $t4, 260($a3)
+		sw $t4, 264($a3)
+		sw $t4, 384($a3)
+		sw $t4, 512($a3)
+		sw $t4, 516($a3)
+		sw $t4, 520($a3)
+		jr $ra
+	draw_one:
+		sw $t4, 8($a3)
+		sw $t4, 136($a3)
+		sw $t4, 264($a3)
+		sw $t4, 392($a3)
+		sw $t4, 520($a3)
+		jr $ra
+	draw_zero:
+		sw $t4, 0($a3)
+		sw $t4, 4($a3)
+		sw $t4, 8($a3)
+		sw $t4, 128($a3)
+		sw $t4, 136($a3)
+		sw $t4, 256($a3)
+		sw $t4, 264($a3)
+		sw $t4, 384($a3)
+		sw $t4, 392($a3)
+		sw $t4, 512($a3)
+		sw $t4, 516($a3)
+		sw $t4, 520($a3)
+		jr $ra
 	
 RENDER_SCREEN:
 	#loop through screen and color background blue
@@ -301,13 +526,14 @@ RENDER_DOODLER:
 	j RETURN
 	
 RENDER_PLATFORMS:
-	beq $t2, 32, RETURN
 	lw $a3, 0($sp) 		# pop platform #3 from stack
 	addi $sp, $sp, 4 
 	lw $a2, 0($sp) 		# pop platform #2 from stack
 	addi $sp, $sp, 4 
 	lw $a1, 0($sp) 		# pop platform #1 from stack
-	addi $sp, $sp, 4 	
+	addi $sp, $sp, 4 
+	
+	beq $t2, 32, RETURN	
 	
 	#Draw one unit in each platform
 	sw $t5, 0($a1)
