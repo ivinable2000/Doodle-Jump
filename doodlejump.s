@@ -4,6 +4,8 @@ backgroundColor: .word 0xFFDC71
 blueColor: .word 0x99ccff
 baseAddress: .word 0x10008000
 doodlerColor: .word 0xff0000
+whiteColor: .word 0xFFFFFF
+blackColor: .word 0x000000
 
 #t0 = base address
 #t3 = doodler position
@@ -56,6 +58,8 @@ main:
 	sw $s3, 0($sp) 		# store platform #2 in stack
 	jal RENDER_PLATFORMS
 	
+	jal DRAW_START_SCREEN
+	
 	li $s4, 1		# set movement direction to up
 	li $s6, 0		# set jump height
 	li $t7, 0		# set score to 0
@@ -98,6 +102,7 @@ PLAY_GAME:
 	jal RENDER_DOODLER
 
 	jal DRAW_SCORE
+	
 	# Calculate sleep
 	jal SLEEP_TIME
 	lw $a0, 0($sp) 		# pop sleep time from stack
@@ -570,10 +575,279 @@ RANDOM_POSITION:
 	
 	j RETURN
 	
+DRAW_START_SCREEN:
+	li $a0, 140
+	add $a0, $a0, $t0
+	
+	# Draw D
+	sw $t4, 0($a0)
+	sw $t4, 4($a0)
+	sw $t4, 128($a0)
+	sw $t4, 136($a0)
+	sw $t4, 256($a0)
+	sw $t4, 268($a0)
+	sw $t4, 384($a0)
+	sw $t4, 392($a0)
+	sw $t4, 512($a0)
+	sw $t4, 516($a0)
+	
+	addi $a0, $a0, 20
+	
+	# Draw O
+	sw $t4, 0($a0)
+	sw $t4, 4($a0)
+	sw $t4, 8($a0)
+	sw $t4, 128($a0)
+	sw $t4, 136($a0)
+	sw $t4, 256($a0)
+	sw $t4, 264($a0)
+	sw $t4, 384($a0)
+	sw $t4, 392($a0)
+	sw $t4, 512($a0)
+	sw $t4, 516($a0)
+	sw $t4, 520($a0)
+	
+	addi $a0, $a0, 16
+	
+	# Draw O
+	sw $t4, 0($a0)
+	sw $t4, 4($a0)
+	sw $t4, 8($a0)
+	sw $t4, 128($a0)
+	sw $t4, 136($a0)
+	sw $t4, 256($a0)
+	sw $t4, 264($a0)
+	sw $t4, 384($a0)
+	sw $t4, 392($a0)
+	sw $t4, 512($a0)
+	sw $t4, 516($a0)
+	sw $t4, 520($a0)
+	
+	addi $a0, $a0, 16
+	
+	# Draw D
+	sw $t4, 0($a0)
+	sw $t4, 4($a0)
+	sw $t4, 128($a0)
+	sw $t4, 136($a0)
+	sw $t4, 256($a0)
+	sw $t4, 268($a0)
+	sw $t4, 384($a0)
+	sw $t4, 392($a0)
+	sw $t4, 512($a0)
+	sw $t4, 516($a0)
+	
+	addi $a0, $a0, 20
+	
+	# Draw L
+	sw $t4, 0($a0)
+	sw $t4, 128($a0)
+	sw $t4, 256($a0)
+	sw $t4, 384($a0)
+	sw $t4, 512($a0)
+	sw $t4, 516($a0)
+	sw $t4, 520($a0)
+	sw $t4, 524($a0)
+	
+	addi $a0, $a0, 20
+	
+	# Draw E
+	sw $t4, 0($a0)
+	sw $t4, 4($a0)
+	sw $t4, 8($a0)
+	sw $t4, 12($a0)
+	sw $t4, 128($a0)
+	sw $t4, 256($a0)
+	sw $t4, 260($a0)
+	sw $t4, 264($a0)
+	sw $t4, 268($a0)
+	sw $t4, 384($a0)
+	sw $t4, 512($a0)
+	sw $t4, 516($a0)
+	sw $t4, 520($a0)
+	sw $t4, 524($a0)
+	
+	li $a0, 928
+	add $a0, $a0, $t0
+	
+	# Draw J
+	sw $t4, 0($a0)
+	sw $t4, 4($a0)
+	sw $t4, 8($a0)
+	sw $t4, 132($a0)
+	sw $t4, 260($a0)
+	sw $t4, 388($a0)
+	sw $t4, 512($a0)
+	sw $t4, 516($a0)
+	
+	addi $a0, $a0, 16
+	
+	# Draw U
+	sw $t4, 0($a0)
+	sw $t4, 8($a0)
+	sw $t4, 128($a0)
+	sw $t4, 136($a0)
+	sw $t4, 256($a0)
+	sw $t4, 264($a0)
+	sw $t4, 384($a0)
+	sw $t4, 392($a0)
+	sw $t4, 512($a0)
+	sw $t4, 516($a0)
+	sw $t4, 520($a0)
+	
+	addi $a0, $a0, 16
+	
+	# Draw M
+	sw $t4, 0($a0)
+	sw $t4, 16($a0)
+	sw $t4, 128($a0)
+	sw $t4, 132($a0)
+	sw $t4, 140($a0)
+	sw $t4, 144($a0)
+	sw $t4, 256($a0)
+	sw $t4, 264($a0)
+	sw $t4, 272($a0)
+	sw $t4, 384($a0)
+	sw $t4, 400($a0)
+	sw $t4, 512($a0)
+	sw $t4, 528($a0)
+	
+	addi $a0, $a0, 24
+	
+	# Draw P
+	sw $t4, 0($a0)
+	sw $t4, 4($a0)
+	sw $t4, 8($a0)
+	sw $t4, 128($a0)
+	sw $t4, 136($a0)
+	sw $t4, 256($a0)
+	sw $t4, 260($a0)
+	sw $t4, 264($a0)
+	sw $t4, 384($a0)
+	sw $t4, 512($a0)
+	
+	jr $ra
+	
+DRAW_GAME_OVER:
+	li $a0, 1176
+	add $a0, $a0, $t0
+	
+	# Draw U
+	sw $t4, 0($a0)
+	sw $t4, 8($a0)
+	sw $t4, 128($a0)
+	sw $t4, 136($a0)
+	sw $t4, 256($a0)
+	sw $t4, 264($a0)
+	sw $t4, 384($a0)
+	sw $t4, 392($a0)
+	sw $t4, 512($a0)
+	sw $t4, 516($a0)
+	sw $t4, 520($a0)
+	
+	addi $a0, $a0, 24
+	
+	# Draw D
+	sw $t4, 0($a0)
+	sw $t4, 4($a0)
+	sw $t4, 128($a0)
+	sw $t4, 136($a0)
+	sw $t4, 256($a0)
+	sw $t4, 268($a0)
+	sw $t4, 384($a0)
+	sw $t4, 392($a0)
+	sw $t4, 512($a0)
+	sw $t4, 516($a0)
+	
+	addi $a0, $a0, 20
+	
+	# Draw I
+	sw $t4, 0($a0)
+	sw $t4, 128($a0)
+	sw $t4, 256($a0)
+	sw $t4, 384($a0)
+	sw $t4, 512($a0)
+	
+	addi $a0, $a0, 8
+	
+	# Draw E
+	sw $t4, 0($a0)
+	sw $t4, 4($a0)
+	sw $t4, 8($a0)
+	sw $t4, 12($a0)
+	sw $t4, 128($a0)
+	sw $t4, 256($a0)
+	sw $t4, 260($a0)
+	sw $t4, 264($a0)
+	sw $t4, 268($a0)
+	sw $t4, 384($a0)
+	sw $t4, 512($a0)
+	sw $t4, 516($a0)
+	sw $t4, 520($a0)
+	sw $t4, 524($a0)
+	
+	addi $a0, $a0, 20
+	
+	# Draw D
+	sw $t4, 0($a0)
+	sw $t4, 4($a0)
+	sw $t4, 128($a0)
+	sw $t4, 136($a0)
+	sw $t4, 256($a0)
+	sw $t4, 268($a0)
+	sw $t4, 384($a0)
+	sw $t4, 392($a0)
+	sw $t4, 512($a0)
+	sw $t4, 516($a0)
+	
+	li $a0, 2228
+	add $a0, $a0, $t0
+	
+	sw $t4, 4($a0)
+	sw $t4, 8($a0)
+	sw $t4, 12($a0)
+
+	sw $t4, 128($a0)
+	sw $t4, 132($a0)
+	sw $t4, 136($a0)
+	sw $t4, 140($a0)
+	sw $t4, 144($a0)
+	sw $t4, 256($a0)
+	sw $t5, 260($a0)
+	sw $t4, 264($a0)
+	sw $t5, 268($a0)
+	sw $t4, 272($a0)
+	sw $t4, 384($a0)
+	sw $t4, 388($a0)
+	sw $t4, 392($a0)
+	sw $t4, 396($a0)
+	sw $t4, 400($a0)
+	sw $t4, 516($a0)
+	sw $t4, 520($a0)
+	sw $t4, 524($a0)
+	
+	jr $ra
+	
 RETURN:
 	jr $ra
 	
 TERMINATE:
+	lw $t1, blackColor	#load black color for background
+	
+	lw $t0, baseAddress 
+	li $t2, 0
+	jal RENDER_SCREEN
+	
+	lw $t4, whiteColor	#load doodler color
+	lw $t5, blackColor
+	
+	lw $t0, baseAddress
+	jal RENDER_DOODLER
+	
+	jal DRAW_SCORE
+	
+	jal DRAW_GAME_OVER
+
 	li $v0, 10
 	syscall 
 	
