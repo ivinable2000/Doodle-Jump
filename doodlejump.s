@@ -6,6 +6,7 @@ baseAddress: .word 0x10008000
 doodlerColor: .word 0xff0000
 whiteColor: .word 0xFFFFFF
 blackColor: .word 0x000000
+greyColor: .word 0xCCCCCC
 
 #t0 = base address
 #t3 = doodler position
@@ -22,7 +23,7 @@ blackColor: .word 0x000000
 main:
 	lw $t0, baseAddress 	# load baseaddress
 	lw $t1, backgroundColor	#load background color
-	lw $t5, blueColor	#load background color
+	lw $t5, blueColor	#load blue color
 	lw $t4, doodlerColor	#load doodler color
 	li $t2, 0		# set counter to 0
 	jal RENDER_SCREEN
@@ -40,14 +41,14 @@ main:
 	lw $s2, 0($sp) 		# pop platform #2 offset from stack
 	addi $sp, $sp, 4 	
 	
-	addi $s2, $s2, 1280	# vertical offset for platform #2 position
+	addi $s2, $s2, 1408	# vertical offset for platform #2 position
 	
 	# Random horizontal offset position for platform #3
 	jal RANDOM_POSITION
 	lw $s3, 0($sp) 		# pop platform #3 offset from stack
 	addi $sp, $sp, 4 	
 	
-	addi $s3, $s3, 2560	# vertical offset for platform #3 position
+	addi $s3, $s3, 2816	# vertical offset for platform #3 position
 	
 	li $t2, 0		# set counter to 0	
 	addi $sp, $sp, -4 
@@ -61,8 +62,10 @@ main:
 	jal DRAW_START_SCREEN
 	
 	li $s4, 1		# set movement direction to up
-	li $s6, 0		# set jump height
+	li $s6, 13		# set jump height
 	li $t7, 0		# set score to 0
+	li $s5, 4096		
+	add $s5, $s5, $t0	# set spring to bottom
 	j WAIT_FOR_START
 	
 
@@ -97,8 +100,10 @@ PLAY_GAME:
 	sw $s3, 0($sp) 		# store platform #2 in stack
 	jal RENDER_PLATFORMS
 	
+	jal CHECK_SPRING
 		
 	lw $t0, baseAddress
+	lw $t5, blueColor	#set color back to blue
 	jal RENDER_DOODLER
 
 	jal DRAW_SCORE
@@ -149,19 +154,19 @@ VERTICAL_MOVE:
 			addi $s1, $s1, 128
 			addi $s2, $s2, 128
 			addi $s3, $s3, 128
-			j increment_jump_counter
+			addi $s5, $s5, 128	# Move spring
+			j dencrement_jump_counter
 		doodler_up:
 			addi $t3, $t3, -128
-			j increment_jump_counter
+			j dencrement_jump_counter
 		
-		#in a jump you can only move up 10 units
-		increment_jump_counter:
-			li $a0, 12
-			bge $s6, $a0, change_direction
-			addi $s6, $s6, 1 # else increment jump counter
+		#in a jump you can only move up 13 units
+		dencrement_jump_counter:
+			beqz $s6, change_direction
+			addi $s6, $s6, -1 # else dencrement jump counter
 			jr $ra
 			change_direction:
-				li $s6, 0	# reset jump height
+				li $s6, 13	# reset jump height
 				li $s4, 0	# set movement direction to down
 				jr $ra
 			
@@ -238,16 +243,42 @@ THIRD_PLATFORM_COLLISION:
 	addi $a1, $s3, 32
 	blt $a0, $a1, third_platform_left_side
 	
-	jr $ra
+	j check_spring_collision
 
 	third_platform_left_side:
 		subi $a1, $a1, 44
 		bge  $a0, $a1, third_platform_collision
-		jr $ra
+		j check_spring_collision
 		third_platform_collision:
 			subi $t3, $t3, 128
 			li $s4, 1	# set movement direction to up
 			addi $t7, $t7, 1 # Increase score
+			jr $ra
+	check_spring_collision:
+		addi $sp, $sp, -4 
+		sw $ra, 0($sp) 		# store return address in stack
+		jal SPRING_COLLISION
+		
+		lw $ra, 0($sp)
+		addi $sp, $sp, 4
+		
+		jr $ra
+		
+SPRING_COLLISION:
+	addi $a1, $s5, 12
+	blt $a0, $a1, spring_left_side
+	
+	jr $ra
+
+	spring_left_side:
+		subi $a1, $a1, 24
+		bge  $a0, $a1, spring_collision
+		jr $ra
+		spring_collision:
+			subi $t3, $t3, 128
+			li $s4, 1	# set movement direction to up
+			li $s6, 23	# set jump height to 20
+			addi $t7, $t7, 2 # Increase score
 			jr $ra
 			
 CHECK_PLATFORM:
@@ -267,23 +298,85 @@ CHECK_PLATFORM:
 		jal RANDOM_POSITION
 		lw $s1, 0($sp) 		# pop platform #1 offset from stack
 		addi $sp, $sp, 4
-		lw $ra, 0($sp) 		# pop return address from stack
-		addi $sp, $sp, 4
-		jr $ra
+		
+		addi $sp, $sp, -4 	# make space in stack for platform 1 position
+		sw $s1, 0($sp)
+		jal MAYBE_MAKE_SPRING
 	new_s2_platform:
 		jal RANDOM_POSITION
 		lw $s2, 0($sp) 		# pop platform #2 offset from stack
 		addi $sp, $sp, 4
-		lw $ra, 0($sp) 		# pop return address from stack
-		addi $sp, $sp, 4
-		jr $ra
+		
+		addi $sp, $sp, -4 	# make space in stack for platform 2 position
+		sw $s2, 0($sp)
+		jal MAYBE_MAKE_SPRING
 	new_s3_platform:
 		jal RANDOM_POSITION
 		lw $s3, 0($sp) 		# pop platform #3 offset from stack
 		addi $sp, $sp, 4
-		lw $ra, 0($sp) 		# pop return address from stack
-		addi $sp, $sp, 4
-		jr $ra
+		
+		addi $sp, $sp, -4 	# make space in stack for platform 3 position
+		sw $s3, 0($sp)
+		jal MAYBE_MAKE_SPRING
+	
+MAYBE_MAKE_SPRING:
+	lw $a3, 0($sp) 		# pop platform position from stack
+	addi $sp, $sp, 4
+		
+	lw $ra, 0($sp) 		# pop return address from stack
+	addi $sp, $sp, 4
+		
+	blt $s5, $a2, RETURN	# If spring is already on screen then return
+		
+	#  Randomly generate chance to create spring
+	li $v0, 42
+	li $a0, 0
+	li $a1, 5
+	syscall 
+		
+	bne $a0, $zero, RETURN	#If spring isnt being made then return
+		
+	addi $a3, $a3, 12	#put spring on top of platform middle
+	addi $a3, $a3, -128
+	add $s5, $a3, $zero	#store spring position in s5
+	
+	jr $ra
+		
+CHECK_SPRING:
+	li $a2, 4096
+	add $a2, $a2, $t0
+	
+	addi $sp, $sp, -4 	
+	sw $s5, 0($sp) 		# store spring position in stack
+	
+	li $t2, 0		# set counter to 0
+	lw $t5, greyColor	#set color to grey
+	
+	blt $s5, $a2, DRAW_SPRING	# If spring is on screen then draw
+	
+	lw $a3, 0($sp) 		# pop spring position from stack
+	addi $sp, $sp, 4 
+	
+	add $s5, $a2, $zero	# If spring is off screen, set it to last pixel of screen 
+	jr $ra
+		
+DRAW_SPRING:
+	lw $a1, 0($sp) 		# pop spring from stack
+	addi $sp, $sp, 4 
+	
+	beq $t2, 12, RETURN	
+	
+	#Draw one unit of spring
+	sw $t5, 0($a1)
+	
+	addi $t2, $t2, 4	# update counter
+	addi $a1, $a1, 4	# move spring position by one 
+	
+	addi $sp, $sp, -4 	
+	sw $a1, 0($sp) 		# store spring position in stack
+
+	j DRAW_SPRING
+	
 		
 SLEEP_TIME:
 	li $a0, 10
@@ -305,9 +398,7 @@ SLEEP_TIME:
 		sw $a0, 0($sp) 
 		
 		jr $ra
-	
-	
-		
+			
 DRAW_SCORE:
 	li $a2, 10
 	div $t7, $a2
@@ -559,6 +650,8 @@ RENDER_PLATFORMS:
 	sw $a3, 0($sp) 		# store platform #3 position in stack
 
 	j RENDER_PLATFORMS
+	
+
 	
 RANDOM_POSITION:
 	li $v0, 42
